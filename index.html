@@ -869,7 +869,7 @@
       </div>
 
       <div class="card card--results card--row2">
-        <div class="card__title">Macro Breakdown</div>
+        <div class="card__title" style="display:flex;justify-content:space-between;align-items:baseline;">Macro Breakdown <a href="#" id="macro-reset" style="font-family:'Inter',sans-serif;font-size:0.65rem;font-weight:500;letter-spacing:0.08em;color:var(--text-dim);text-decoration:none;text-transform:uppercase;cursor:pointer;">Reset</a></div>
 
         <div class="macro__rows" aria-live="polite">
           <div class="macro__row">
@@ -1111,6 +1111,15 @@
           }
         } catch (e) {}
       }
+
+      // Macro reset
+      document.getElementById('macro-reset').addEventListener('click', function (e) {
+        e.preventDefault();
+        carbPctInput.value = 55;
+        proteinPctInput.value = 20;
+        fatPctInput.value = 25;
+        recalculate();
+      });
 
       // Event listeners
       weightInput.addEventListener('input', recalculate);
