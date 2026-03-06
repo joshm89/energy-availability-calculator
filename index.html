@@ -1,0 +1,1072 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Energy Availability Calculator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* ============================================================
+       ENERGY AVAILABILITY CALCULATOR
+       Design: Editorial sports-performance aesthetic
+       Palette: Near-black + chartreuse accent + cool neutrals
+       Typography: Space Grotesk (display) / Inter (body)
+       ============================================================ */
+
+    *, *::before, *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      /* --- Palette --- */
+      --bg: #0a0a0b;
+      --bg-card: rgba(255, 255, 255, 0.025);
+      --bg-card-border: rgba(255, 255, 255, 0.06);
+
+      /* JS-referenced color tokens: new values, same names */
+      --gold: #c8f542;
+      --gold-dim: rgba(200, 245, 66, 0.10);
+      --gold-glow: rgba(200, 245, 66, 0.35);
+      --teal: #6ec8e4;
+      --teal-dim: rgba(110, 200, 228, 0.08);
+      --orange: #e47a8f;
+      --orange-dim: rgba(228, 122, 143, 0.08);
+
+      --text: #e4e2de;
+      --text-dim: rgba(228, 226, 222, 0.40);
+      --text-mid: rgba(228, 226, 222, 0.62);
+      --danger: #f06060;
+      --success: #78e0a0;
+
+      /* --- Spacing scale --- */
+      --space-1: 0.25rem;
+      --space-2: 0.5rem;
+      --space-3: 0.75rem;
+      --space-4: 1rem;
+      --space-5: 1.25rem;
+      --space-6: 1.5rem;
+      --space-7: 2rem;
+      --space-8: 2.5rem;
+      --space-9: 3rem;
+
+      /* --- Surface --- */
+      --rule: rgba(255, 255, 255, 0.07);
+      --input-border: rgba(255, 255, 255, 0.10);
+      --input-border-focus: var(--gold);
+    }
+
+    html {
+      font-size: 16px;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-feature-settings: "kern" 1, "ss01" 1;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Subtle grain texture instead of colored gradient blobs */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 60% 40% at 20% 0%, rgba(200, 245, 66, 0.025) 0%, transparent 70%),
+        radial-gradient(ellipse 50% 60% at 90% 100%, rgba(110, 200, 228, 0.015) 0%, transparent 60%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ---- Calculator (root container) ---- */
+    .calculator {
+      position: relative;
+      z-index: 1;
+      max-width: 1060px;
+      margin: 0 auto;
+      padding: var(--space-8) var(--space-6) var(--space-9);
+    }
+
+    /* ---- Header ---- */
+    .header {
+      margin-bottom: var(--space-9);
+      opacity: 0;
+      animation: fadeUp 0.7s ease-out forwards;
+    }
+
+    .header__title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 700;
+      font-size: clamp(1.6rem, 4.5vw, 2.2rem);
+      letter-spacing: -0.035em;
+      color: var(--text);
+      line-height: 1.1;
+      margin-bottom: var(--space-3);
+    }
+
+    .header__subtitle {
+      color: var(--text-dim);
+      font-size: 0.9rem;
+      font-weight: 400;
+      max-width: 440px;
+      line-height: 1.55;
+      letter-spacing: 0.005em;
+    }
+
+    /* ---- Grid: 2x2 so dividers align across columns ---- */
+    .grid {
+      display: grid;
+      gap: 0;
+    }
+
+    @media (min-width: 768px) {
+      .grid {
+        grid-template-columns: 1fr 1fr;
+        column-gap: var(--space-9);
+        align-items: start;
+      }
+    }
+
+    /* ---- Card ----
+       No glass-morphism. No rounded corners. Clean editorial panels
+       separated by a thin top rule and generous whitespace. */
+    .card {
+      background: transparent;
+      border: none;
+      border-top: 1px solid var(--rule);
+      border-radius: 0;
+      padding: var(--space-4) 0 var(--space-8);
+      backdrop-filter: none;
+      -webkit-backdrop-filter: none;
+      opacity: 0;
+      animation: fadeUp 0.6s ease-out forwards;
+      transition: none;
+    }
+
+    .card:nth-child(1) { animation-delay: 0.1s; }
+    .card:nth-child(2) { animation-delay: 0.15s; }
+    .card:nth-child(3) { animation-delay: 0.2s; }
+    .card:nth-child(4) { animation-delay: 0.25s; }
+
+    .card__title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 700;
+      font-size: 0.8rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-bottom: var(--space-6);
+    }
+
+    .card--results .card__title {
+      margin-bottom: var(--space-4);
+    }
+
+    /* No hover lift on cards -- keep it grounded */
+
+    /* ---- Pill toggle ---- */
+    .pill {
+      display: inline-flex;
+      background: rgba(255, 255, 255, 0.04);
+      border-radius: 6px;
+      padding: 3px;
+      gap: 2px;
+      position: relative;
+    }
+
+    .pill__btn {
+      font-family: 'Inter', sans-serif;
+      font-size: 0.75rem;
+      font-weight: 500;
+      padding: 0.45rem 0.85rem;
+      border: none;
+      border-radius: 4px;
+      background: transparent;
+      color: var(--text-dim);
+      cursor: pointer;
+      transition: color 0.2s ease, background 0.2s ease;
+      min-height: 44px;
+      min-width: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      white-space: nowrap;
+      letter-spacing: 0.02em;
+    }
+
+    .pill__btn--active {
+      background: rgba(200, 245, 66, 0.12);
+      color: var(--gold);
+    }
+
+    .pill--comp .pill__btn {
+      padding: 0.45rem 0.65rem;
+      font-size: 0.72rem;
+    }
+
+    @media (hover: hover) {
+      .pill__btn:not(.pill__btn--active):hover {
+        color: var(--text-mid);
+        background: rgba(255, 255, 255, 0.04);
+      }
+    }
+
+    .pill__btn:focus-visible {
+      outline: 2px solid var(--gold);
+      outline-offset: -2px;
+      border-radius: 4px;
+    }
+
+    /* ---- Field ---- */
+    .field {
+      margin-bottom: var(--space-5);
+    }
+
+    .field:last-child {
+      margin-bottom: 0;
+    }
+
+    .field__label {
+      display: block;
+      font-size: 0.72rem;
+      font-weight: 500;
+      color: var(--text-dim);
+      margin-bottom: var(--space-2);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .field__row {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+    }
+
+    /* Inputs: bottom-border only, no background -- embedded editorial feel */
+    .field__input {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1.15rem;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+      background: transparent;
+      border: none;
+      border-bottom: 1.5px solid var(--input-border);
+      border-radius: 0;
+      padding: 0.5rem 0.15rem;
+      color: var(--text);
+      width: 100%;
+      max-width: 130px;
+      outline: none;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+      min-height: 44px;
+      -moz-appearance: textfield;
+    }
+
+    .field__input::-webkit-inner-spin-button,
+    .field__input::-webkit-outer-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+
+    .field__input:focus {
+      border-color: var(--gold);
+      box-shadow: 0 2px 0 0 rgba(200, 245, 66, 0.25);
+    }
+
+    @media (hover: hover) {
+      .field__input:hover {
+        border-color: rgba(255, 255, 255, 0.20);
+      }
+    }
+
+    .field__input-wrap {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      max-width: 130px;
+      width: 100%;
+    }
+
+    .field__input-wrap .field__input {
+      padding-right: 1.8rem;
+      max-width: none;
+      width: 100%;
+    }
+
+    .field__unit {
+      position: absolute;
+      right: 0.15rem;
+      bottom: 0.55rem;
+      font-size: 0.8rem;
+      color: var(--text-dim);
+      font-weight: 400;
+      pointer-events: none;
+    }
+
+    /* ---- FFM Result ---- */
+    .ffm {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: var(--space-1);
+      margin-top: var(--space-7);
+      padding: var(--space-5) 0;
+      background: transparent;
+      border-radius: 0;
+      border: none;
+      border-top: 1px solid var(--rule);
+      box-shadow: none;
+      text-align: left;
+    }
+
+    .ffm__label {
+      font-size: 0.68rem;
+      font-weight: 500;
+      color: var(--text-dim);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      order: -1;
+    }
+
+    .ffm__value {
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 700;
+      font-size: 1.6rem;
+      font-variant-numeric: tabular-nums;
+      color: var(--teal);
+      line-height: 1.15;
+    }
+
+    .ffm__unit {
+      font-size: 0.85rem;
+      color: var(--text-dim);
+      font-weight: 400;
+    }
+
+    /* ---- Calorie: THE focal point ---- */
+    .calorie {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    .calorie__number {
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 700;
+      font-size: clamp(4rem, 12vw, 6.5rem);
+      font-variant-numeric: tabular-nums;
+      color: var(--gold);
+      line-height: 0.9;
+      text-shadow: none;
+      letter-spacing: -0.04em;
+      transition: opacity 0.15s ease;
+    }
+
+    .calorie__formula {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 0.78rem;
+      font-weight: 500;
+      color: var(--text-dim);
+      margin-top: var(--space-4);
+      opacity: 0.7;
+      letter-spacing: 0.01em;
+    }
+
+    /* ---- Slider ---- */
+
+    .slider__header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: var(--space-2);
+    }
+
+    .slider__value {
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 700;
+      font-size: 1.8rem;
+      font-variant-numeric: tabular-nums;
+      color: var(--gold);
+      letter-spacing: -0.02em;
+    }
+
+    .slider__unit {
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      font-weight: 400;
+    }
+
+    .slider__input {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      border-radius: 0;
+      outline: none;
+      cursor: pointer;
+      background: transparent;
+      min-height: 44px;
+    }
+
+    .slider__input::-webkit-slider-runnable-track {
+      height: 3px;
+      border-radius: 0;
+      background: linear-gradient(
+        to right,
+        var(--gold) 0%,
+        var(--gold) var(--fill, 50%),
+        rgba(255, 255, 255, 0.07) var(--fill, 50%),
+        rgba(255, 255, 255, 0.07) 100%
+      );
+    }
+
+    .slider__input::-moz-range-track {
+      height: 3px;
+      border-radius: 0;
+      background: linear-gradient(
+        to right,
+        var(--gold) 0%,
+        var(--gold) var(--fill, 50%),
+        rgba(255, 255, 255, 0.07) var(--fill, 50%),
+        rgba(255, 255, 255, 0.07) 100%
+      );
+    }
+
+    .slider__input::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: var(--gold);
+      border: 2.5px solid var(--bg);
+      box-shadow: 0 0 0 1px rgba(200, 245, 66, 0.3);
+      cursor: pointer;
+      transition: box-shadow 0.2s ease, transform 0.15s ease;
+    }
+
+    .slider__input::-webkit-slider-thumb:hover {
+      box-shadow: 0 0 0 4px rgba(200, 245, 66, 0.15), 0 0 0 1px rgba(200, 245, 66, 0.3);
+      transform: scale(1.1);
+    }
+
+    .slider__input::-moz-range-thumb {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: var(--gold);
+      border: 2.5px solid var(--bg);
+      box-shadow: 0 0 0 1px rgba(200, 245, 66, 0.3);
+      cursor: pointer;
+    }
+
+    .slider__input:focus-visible::-webkit-slider-thumb {
+      box-shadow: 0 0 0 4px rgba(200, 245, 66, 0.20), 0 0 0 1px rgba(200, 245, 66, 0.4);
+    }
+
+    /* ---- Slider Zones: full-width segmented bar ---- */
+    .slider__zones {
+      margin-top: -0.75rem;
+      margin-bottom: var(--space-5);
+    }
+
+    .slider__zone-track {
+      display: flex;
+      height: 3px;
+      border-radius: 0;
+      overflow: hidden;
+      gap: 3px;
+    }
+
+    .slider__zone-seg {
+      border-radius: 0;
+    }
+
+    .slider__zone-seg--low {
+      width: calc(25% + 5.5px);
+      flex-shrink: 0;
+      background: var(--orange);
+      opacity: 0.45;
+    }
+
+    .slider__zone-seg--mid {
+      flex: 1;
+      background: var(--teal);
+      opacity: 0.45;
+    }
+
+    .slider__zone-seg--high {
+      width: calc(25% + 5.5px);
+      flex-shrink: 0;
+      background: var(--gold);
+      opacity: 0.45;
+    }
+
+    .slider__zone-labels {
+      display: flex;
+      margin-top: 0.5rem;
+    }
+
+    .slider__zone-label {
+      font-size: 0.65rem;
+      font-weight: 500;
+      text-align: center;
+      white-space: nowrap;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .slider__zone-label--low {
+      width: calc(25% + 5.5px);
+      flex-shrink: 0;
+      color: var(--orange);
+    }
+
+    .slider__zone-label--mid {
+      flex: 1;
+      color: var(--teal);
+    }
+
+    .slider__zone-label--high {
+      width: calc(25% + 5.5px);
+      flex-shrink: 0;
+      color: var(--gold);
+    }
+
+    .slider__note {
+      font-size: 0.78rem;
+      color: var(--text-dim);
+      line-height: 1.65;
+    }
+
+    /* ---- Macro rows: data-table aesthetic ---- */
+    .macro__rows {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    .macro__row {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      padding: var(--space-3) 0;
+      border-radius: 0;
+      background: transparent;
+      border: none;
+      border-bottom: 1px solid var(--rule);
+      transition: background 0.2s ease;
+    }
+
+    .macro__row:last-of-type,
+    .macro__row:nth-last-child(2) {
+      border-bottom: none;
+    }
+
+    @media (hover: hover) {
+      .macro__row:hover {
+        background: rgba(255, 255, 255, 0.02);
+      }
+    }
+
+    .macro__dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 2px;
+      flex-shrink: 0;
+    }
+
+    .macro__dot--carbs { background: var(--gold); }
+    .macro__dot--protein { background: var(--teal); }
+    .macro__dot--fat { background: var(--orange); }
+
+    .macro__name {
+      font-size: 0.82rem;
+      font-weight: 500;
+      color: var(--text-mid);
+      letter-spacing: 0.01em;
+      min-width: 4rem;
+    }
+
+    .macro__pct-wrap {
+      display: flex;
+      align-items: center;
+      gap: var(--space-1);
+    }
+
+    .macro__pct-input {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+      width: 3.2rem;
+      text-align: center;
+      background: transparent;
+      border: none;
+      border-bottom: 1.5px solid var(--input-border);
+      border-radius: 0;
+      padding: 0.3rem 0.15rem;
+      color: var(--text);
+      outline: none;
+      min-height: 44px;
+      -moz-appearance: textfield;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .macro__pct-input::-webkit-inner-spin-button,
+    .macro__pct-input::-webkit-outer-spin-button {
+      -webkit-appearance: none;
+    }
+
+    .macro__pct-input:focus {
+      border-color: var(--gold);
+      box-shadow: 0 2px 0 0 rgba(200, 245, 66, 0.2);
+    }
+
+    @media (hover: hover) {
+      .macro__pct-input:hover {
+        border-color: rgba(255, 255, 255, 0.20);
+      }
+    }
+
+    .macro__pct-input--warn {
+      border-color: rgba(240, 96, 96, 0.5);
+      box-shadow: 0 2px 0 0 rgba(240, 96, 96, 0.15);
+    }
+
+    .macro__pct-input--warn:focus {
+      border-color: rgba(240, 96, 96, 0.7);
+      box-shadow: 0 2px 0 0 rgba(240, 96, 96, 0.25);
+    }
+
+    .macro__pct-suffix {
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      font-weight: 500;
+    }
+
+    .macro__grams {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+      color: var(--text);
+      text-align: right;
+      min-width: 52px;
+      margin-left: auto;
+    }
+
+    .macro__cals {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 0.72rem;
+      font-weight: 500;
+      font-variant-numeric: tabular-nums;
+      color: var(--text-dim);
+      text-align: right;
+      min-width: 56px;
+    }
+
+    .macro__warn {
+      font-size: 0.75rem;
+      color: var(--danger);
+      text-align: center;
+      min-height: 1.2em;
+      margin-top: 0.5rem;
+      font-weight: 500;
+    }
+
+    /* ---- Screen reader only ---- */
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    /* ---- Footer ---- */
+    .footer {
+      text-align: center;
+      margin-top: var(--space-8);
+      padding-top: var(--space-6);
+      border-top: 1px solid var(--rule);
+      opacity: 0;
+      animation: fadeUp 0.6s ease-out 0.45s forwards;
+    }
+
+    .footer__text {
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      max-width: 500px;
+      margin: 0 auto;
+      line-height: 1.6;
+      letter-spacing: 0.005em;
+    }
+
+    /* ---- Animations ---- */
+    @keyframes fadeUp {
+      from {
+        opacity: 0;
+        transform: translateY(16px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* ---- Responsive ---- */
+    @media (max-width: 767px) {
+      .calculator {
+        padding: var(--space-6) var(--space-5) var(--space-9);
+      }
+      .card {
+        padding: var(--space-6) 0;
+      }
+      /* Reorder: inputs together, then results together */
+      .card--inputs                   { order: 1; }
+      .card--row2:not(.card--results) { order: 2; }
+      .card--results:not(.card--row2) { order: 3; }
+      .card--results.card--row2       { order: 4; }
+      .results__hero {
+        flex-direction: column;
+        align-items: center;
+        gap: var(--space-6);
+        padding-bottom: var(--space-4);
+      }
+      .calorie {
+        align-items: center;
+        text-align: center;
+      }
+      .macro__row {
+        gap: var(--space-2);
+      }
+      .macro__cals {
+        display: none;
+      }
+      .calorie__number {
+        font-size: clamp(3.2rem, 14vw, 5rem);
+      }
+      .calorie__formula {
+        font-size: 0.68rem;
+      }
+      .pill--comp .pill__btn {
+        font-size: 0.68rem;
+        padding: 0.4rem 0.5rem;
+      }
+      .field__input {
+        max-width: 110px;
+      }
+    }
+
+    /* ---- Selection color ---- */
+    ::selection {
+      background: rgba(200, 245, 66, 0.30);
+      color: var(--text);
+    }
+  </style>
+</head>
+<body>
+  <div class="calculator">
+    <header class="header">
+      <h1 class="header__title">Energy Availability Calculator</h1>
+      <p class="header__subtitle">Calculate daily calorie targets from your fat-free mass and energy availability goals.</p>
+    </header>
+
+    <div class="grid">
+      <!-- Row 1: Body Metrics | Calorie Hero -->
+      <div class="card card--inputs">
+        <div class="card__title">Body Metrics</div>
+
+        <div class="field">
+          <label class="field__label" for="weight-input">Weight</label>
+          <div class="field__row">
+            <input type="number" class="field__input" id="weight-input" value="70" min="20" max="300" step="0.1" inputmode="decimal" aria-label="Body weight">
+            <div class="pill" role="group" aria-label="Weight unit">
+              <button type="button" class="pill__btn pill__btn--active" data-unit="kg" aria-pressed="true">kg</button>
+              <button type="button" class="pill__btn" data-unit="lbs" aria-pressed="false">lbs</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="field" id="bf-group">
+          <label class="field__label" for="bf-input">Body fat percentage</label>
+          <div class="field__row">
+            <div class="field__input-wrap">
+              <input type="number" class="field__input" id="bf-input" value="20" min="3" max="60" step="0.1" inputmode="decimal" aria-label="Body fat percentage">
+              <span class="field__unit">%</span>
+            </div>
+            <div class="pill pill--comp" role="group" aria-label="Composition input mode">
+              <button type="button" class="pill__btn pill__btn--active" data-mode="bf" aria-pressed="true">Body Fat %</button>
+              <button type="button" class="pill__btn" data-mode="ffm" aria-pressed="false">FFM (kg)</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="field" id="ffm-group" style="display:none;">
+          <label class="field__label" for="ffm-input">Fat-free mass</label>
+          <div class="field__row">
+            <div class="field__input-wrap">
+              <input type="number" class="field__input" id="ffm-input" value="56" min="10" max="200" step="0.1" inputmode="decimal" aria-label="Fat-free mass in kg">
+              <span class="field__unit">kg</span>
+            </div>
+            <div class="pill pill--comp" role="group" aria-label="Composition input mode">
+              <button type="button" class="pill__btn pill__btn--active" data-mode="bf" aria-pressed="true">Body Fat %</button>
+              <button type="button" class="pill__btn" data-mode="ffm" aria-pressed="false">FFM (kg)</button>
+            </div>
+          </div>
+        </div>
+
+        <span id="ffm-output" class="sr-only">56.0</span>
+      </div>
+
+      <div class="card card--results">
+        <div class="card__title">Calories / Day</div>
+        <div class="calorie" aria-live="polite">
+          <div class="calorie__number" id="calorie-output">2,240</div>
+          <div class="calorie__formula" id="calorie-formula">56.0 kg FFM x 40 cal/kg = 2,240</div>
+        </div>
+      </div>
+
+      <!-- Row 2: Energy Availability | Macro Breakdown (dividers align) -->
+      <div class="card card--row2">
+        <div class="slider">
+          <div class="card__title">Optimal Energy Availability (OEA)</div>
+
+          <div class="slider__header">
+            <div>
+              <span class="slider__value" id="oea-value">40</span>
+              <span class="slider__unit"> cal/kg FFM</span>
+            </div>
+          </div>
+          <input type="range" class="slider__input" id="oea-slider" min="30" max="50" value="40" step="1" aria-label="Optimal energy availability in calories per kilogram of fat-free mass">
+
+          <div class="slider__zones">
+            <div class="slider__zone-track">
+              <div class="slider__zone-seg slider__zone-seg--low"></div>
+              <div class="slider__zone-seg slider__zone-seg--mid"></div>
+              <div class="slider__zone-seg slider__zone-seg--high"></div>
+            </div>
+            <div class="slider__zone-labels">
+              <span class="slider__zone-label slider__zone-label--low">Fat loss</span>
+              <span class="slider__zone-label slider__zone-label--mid">Good for most</span>
+              <span class="slider__zone-label slider__zone-label--high">Power + muscle</span>
+            </div>
+          </div>
+
+          <p class="slider__note">30-45 cal/kg is good for most people. Athletes should aim for 45-50 cal/kg. Lean towards the lower end for fat loss, higher end for building power and muscle.</p>
+        </div>
+      </div>
+
+      <div class="card card--results card--row2">
+        <div class="card__title">Macro Breakdown</div>
+
+        <div class="macro__rows" aria-live="polite">
+          <div class="macro__row">
+            <span class="macro__dot macro__dot--carbs"></span>
+            <span class="macro__name">Carbs</span>
+            <span class="macro__pct-wrap"><input type="number" class="macro__pct-input" id="carb-pct" value="65" min="0" max="100" step="1" inputmode="numeric" aria-label="Carbohydrate percentage"><span class="macro__pct-suffix">%</span></span>
+            <span class="macro__grams" id="carb-grams">364.0g</span>
+            <span class="macro__cals" id="carb-cals">1,456 cal</span>
+          </div>
+          <div class="macro__row">
+            <span class="macro__dot macro__dot--protein"></span>
+            <span class="macro__name">Protein</span>
+            <span class="macro__pct-wrap"><input type="number" class="macro__pct-input" id="protein-pct" value="18" min="0" max="100" step="1" inputmode="numeric" aria-label="Protein percentage"><span class="macro__pct-suffix">%</span></span>
+            <span class="macro__grams" id="protein-grams">100.8g</span>
+            <span class="macro__cals" id="protein-cals">403 cal</span>
+          </div>
+          <div class="macro__row">
+            <span class="macro__dot macro__dot--fat"></span>
+            <span class="macro__name">Fat</span>
+            <span class="macro__pct-wrap"><input type="number" class="macro__pct-input" id="fat-pct" value="17" min="0" max="100" step="1" inputmode="numeric" aria-label="Fat percentage"><span class="macro__pct-suffix">%</span></span>
+            <span class="macro__grams" id="fat-grams">42.3g</span>
+            <span class="macro__cals" id="fat-cals">381 cal</span>
+          </div>
+          <div class="macro__warn" id="macro-warn-text" role="alert"></div>
+        </div>
+      </div>
+    </div>
+
+    <footer class="footer">
+      <p class="footer__text">This calculator provides estimates only. Consult a sports dietitian for personalized guidance on fueling strategies tailored to your training, goals, and health needs.</p>
+    </footer>
+  </div>
+
+  <script>
+    (function () {
+      // Elements
+      const weightInput = document.getElementById('weight-input');
+      const bfInput = document.getElementById('bf-input');
+      const ffmInput = document.getElementById('ffm-input');
+      const bfGroup = document.getElementById('bf-group');
+      const ffmGroup = document.getElementById('ffm-group');
+      const ffmOutput = document.getElementById('ffm-output');
+      const oeaSlider = document.getElementById('oea-slider');
+      const oeaValue = document.getElementById('oea-value');
+      const calorieOutput = document.getElementById('calorie-output');
+      const calorieFormula = document.getElementById('calorie-formula');
+      const macroWarnText = document.getElementById('macro-warn-text');
+      const carbPctInput = document.getElementById('carb-pct');
+      const proteinPctInput = document.getElementById('protein-pct');
+      const fatPctInput = document.getElementById('fat-pct');
+      const carbGrams = document.getElementById('carb-grams');
+      const proteinGrams = document.getElementById('protein-grams');
+      const fatGrams = document.getElementById('fat-grams');
+      const carbCals = document.getElementById('carb-cals');
+      const proteinCals = document.getElementById('protein-cals');
+      const fatCals = document.getElementById('fat-cals');
+      const macroPctInputs = [carbPctInput, proteinPctInput, fatPctInput];
+
+      // State
+      let weightUnit = 'kg';
+      let compMode = 'bf';
+
+      // Unit toggle
+      const unitBtns = document.querySelectorAll('.pill:not(.pill--comp) .pill__btn');
+      unitBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+          const newUnit = btn.dataset.unit;
+          if (newUnit === weightUnit) return;
+
+          const currentVal = parseFloat(weightInput.value) || 0;
+          let converted;
+          if (newUnit === 'lbs') {
+            converted = currentVal / 0.453592;
+          } else {
+            converted = currentVal * 0.453592;
+          }
+          weightUnit = newUnit;
+          weightInput.value = Math.round(converted * 10) / 10;
+
+          unitBtns.forEach(b => {
+            b.classList.toggle('pill__btn--active', b === btn);
+            b.setAttribute('aria-pressed', b === btn ? 'true' : 'false');
+          });
+          recalculate();
+        });
+      });
+
+      // Composition toggle (two instances - one in each input group)
+      const allCompBtns = document.querySelectorAll('.pill--comp .pill__btn');
+      allCompBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+          const newMode = btn.dataset.mode;
+          if (newMode === compMode) return;
+
+          // Pre-populate the target field from the current FFM
+          const rawWeight = parseFloat(weightInput.value) || 0;
+          const weightKg = weightUnit === 'lbs' ? rawWeight * 0.453592 : rawWeight;
+          if (newMode === 'ffm') {
+            const bf = parseFloat(bfInput.value) || 0;
+            ffmInput.value = Math.round(weightKg * (1 - bf / 100) * 10) / 10;
+          } else {
+            const ffm = parseFloat(ffmInput.value) || 0;
+            if (weightKg > 0) {
+              bfInput.value = Math.round((1 - ffm / weightKg) * 1000) / 10;
+            }
+          }
+
+          compMode = newMode;
+          // Sync both toggle instances
+          allCompBtns.forEach(b => {
+            const isActive = b.dataset.mode === newMode;
+            b.classList.toggle('pill__btn--active', isActive);
+            b.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+          });
+
+          bfGroup.style.display = compMode === 'bf' ? '' : 'none';
+          ffmGroup.style.display = compMode === 'ffm' ? '' : 'none';
+          recalculate();
+        });
+      });
+
+      // Slider fill
+      function updateSliderFill() {
+        const val = oeaSlider.value;
+        const pct = ((val - 30) / 20) * 100;
+        oeaSlider.style.setProperty('--fill', pct + '%');
+        oeaValue.textContent = val;
+      }
+
+      // Format number with commas
+      function fmt(n) {
+        return Math.round(n).toLocaleString('en-US');
+      }
+
+      // Main calculation
+      function recalculate() {
+        const rawWeight = parseFloat(weightInput.value) || 0;
+        const weightKg = weightUnit === 'lbs' ? rawWeight * 0.453592 : rawWeight;
+
+        let ffmKg;
+        if (compMode === 'bf') {
+          const bf = parseFloat(bfInput.value) || 0;
+          ffmKg = weightKg * (1 - bf / 100);
+        } else {
+          ffmKg = parseFloat(ffmInput.value) || 0;
+        }
+
+        if (ffmKg < 0) ffmKg = 0;
+        ffmOutput.textContent = ffmKg.toFixed(1);
+
+        const oea = parseFloat(oeaSlider.value) || 40;
+        const totalCal = ffmKg * oea;
+
+        calorieOutput.textContent = fmt(totalCal);
+        calorieFormula.textContent = ffmKg.toFixed(1) + ' kg FFM x ' + oea + ' cal/kg = ' + fmt(totalCal);
+
+        // Macros
+        const carbPct = parseFloat(carbPctInput.value) || 0;
+        const protPct = parseFloat(proteinPctInput.value) || 0;
+        const fatPct = parseFloat(fatPctInput.value) || 0;
+
+        const carbCalVal = totalCal * (carbPct / 100);
+        const protCalVal = totalCal * (protPct / 100);
+        const fatCalVal = totalCal * (fatPct / 100);
+
+        carbGrams.textContent = (carbCalVal / 4).toFixed(1) + 'g';
+        proteinGrams.textContent = (protCalVal / 4).toFixed(1) + 'g';
+        fatGrams.textContent = (fatCalVal / 9).toFixed(1) + 'g';
+
+        carbCals.textContent = fmt(carbCalVal) + ' cal';
+        proteinCals.textContent = fmt(protCalVal) + ' cal';
+        fatCals.textContent = fmt(fatCalVal) + ' cal';
+
+        // Warn on macro inputs if total != 100
+        const total = carbPct + protPct + fatPct;
+        const roundedTotal = Math.round(total);
+        const isWarn = roundedTotal !== 100;
+        macroPctInputs.forEach(input => {
+          input.classList.toggle('macro__pct-input--warn', isWarn);
+        });
+        macroWarnText.textContent = isWarn ? 'Percentages must total 100%' : '';
+
+        updateSliderFill();
+      }
+
+      // Event listeners
+      weightInput.addEventListener('input', recalculate);
+      bfInput.addEventListener('input', recalculate);
+      ffmInput.addEventListener('input', recalculate);
+      oeaSlider.addEventListener('input', recalculate);
+      carbPctInput.addEventListener('input', recalculate);
+      proteinPctInput.addEventListener('input', recalculate);
+      fatPctInput.addEventListener('input', recalculate);
+
+      // Initialize
+      recalculate();
+    })();
+  </script>
+</body>
+</html>
