@@ -1053,6 +1053,63 @@
         macroWarnText.textContent = isWarn ? 'Percentages must total 100%' : '';
 
         updateSliderFill();
+        saveInputs();
+      }
+
+      // localStorage persistence
+      const STORAGE_KEY = 'eac_inputs';
+
+      function saveInputs() {
+        const data = {
+          weight: weightInput.value,
+          weightUnit: weightUnit,
+          bf: bfInput.value,
+          ffm: ffmInput.value,
+          compMode: compMode,
+          oea: oeaSlider.value,
+          carbPct: carbPctInput.value,
+          proteinPct: proteinPctInput.value,
+          fatPct: fatPctInput.value,
+        };
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch (e) {}
+      }
+
+      function loadInputs() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (!raw) return;
+          const data = JSON.parse(raw);
+
+          if (data.weight != null) weightInput.value = data.weight;
+          if (data.bf != null) bfInput.value = data.bf;
+          if (data.ffm != null) ffmInput.value = data.ffm;
+          if (data.oea != null) oeaSlider.value = data.oea;
+          if (data.carbPct != null) carbPctInput.value = data.carbPct;
+          if (data.proteinPct != null) proteinPctInput.value = data.proteinPct;
+          if (data.fatPct != null) fatPctInput.value = data.fatPct;
+
+          // Restore weight unit
+          if (data.weightUnit && data.weightUnit !== weightUnit) {
+            weightUnit = data.weightUnit;
+            unitBtns.forEach(b => {
+              const isActive = b.dataset.unit === weightUnit;
+              b.classList.toggle('pill__btn--active', isActive);
+              b.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+            });
+          }
+
+          // Restore composition mode
+          if (data.compMode && data.compMode !== compMode) {
+            compMode = data.compMode;
+            allCompBtns.forEach(b => {
+              const isActive = b.dataset.mode === compMode;
+              b.classList.toggle('pill__btn--active', isActive);
+              b.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+            });
+            bfGroup.style.display = compMode === 'bf' ? '' : 'none';
+            ffmGroup.style.display = compMode === 'ffm' ? '' : 'none';
+          }
+        } catch (e) {}
       }
 
       // Event listeners
@@ -1065,6 +1122,7 @@
       fatPctInput.addEventListener('input', recalculate);
 
       // Initialize
+      loadInputs();
       recalculate();
     })();
   </script>
